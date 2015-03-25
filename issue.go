@@ -3,13 +3,14 @@ package redmine
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
 type issueRequest struct {
-	Issue Issue `json:"issue"`
+	Issue IssueRequest `json:"issue"`
 }
 
 type issueResult struct {
@@ -36,6 +37,21 @@ type Issue struct {
 	StatusDate  string  `json:"status_date"`
 	CreatedOn   string  `json:"created_on"`
 	UpdatedOn   string  `json:"updated_on"`
+}
+
+type IssueRequest struct {
+	Id           *int    `json:"id"`
+	Subject      *string `json:"subject"`
+	Description  *string `json:"description"`
+	ProjectId    *int    `json:"project_id"`
+	TrackerId    *int    `json:"tracker_id"`
+	StatusId     *int    `json:"status_id"`
+	PriorityId   *int    `json:"priority_id"`
+	AssignedToId *int    `json:"assigned_to_id"`
+	Notes        *string `json:"notes"`
+	StatusDate   *string `json:"status_date"`
+	CreatedOn    *string `json:"created_on"`
+	UpdatedOn    *string `json:"updated_on"`
 }
 
 func (c *client) IssuesOf(projectId int) ([]Issue, error) {
@@ -73,7 +89,7 @@ func (c *client) Issue(id int) (*Issue, error) {
 	defer res.Body.Close()
 
 	decoder := json.NewDecoder(res.Body)
-	var r issueRequest
+	var r issueResult
 	if res.StatusCode != 200 {
 		var er errorsResult
 		err = decoder.Decode(&er)
@@ -137,7 +153,8 @@ func (c *client) Issues() ([]Issue, error) {
 	return r.Issues, nil
 }
 
-func (c *client) CreateIssue(issue Issue) (*Issue, error) {
+func (c *client) CreateIssue(issue IssueRequest) (*Issue, error) {
+
 	var ir issueRequest
 	ir.Issue = issue
 	s, err := json.Marshal(ir)
@@ -156,7 +173,7 @@ func (c *client) CreateIssue(issue Issue) (*Issue, error) {
 	defer res.Body.Close()
 
 	decoder := json.NewDecoder(res.Body)
-	var r issueRequest
+	var r issueResult
 	if res.StatusCode != 201 {
 		var er errorsResult
 		err = decoder.Decode(&er)
@@ -172,14 +189,15 @@ func (c *client) CreateIssue(issue Issue) (*Issue, error) {
 	return &r.Issue, nil
 }
 
-func (c *client) UpdateIssue(issue Issue) error {
+func (c *client) UpdateIssue(issue IssueRequest) error {
 	var ir issueRequest
 	ir.Issue = issue
 	s, err := json.Marshal(ir)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("PUT", c.endpoint+"/issues/"+strconv.Itoa(issue.Id)+".json?key="+c.apikey, strings.NewReader(string(s)))
+	fmt.Println(string(s)) //degug code
+	req, err := http.NewRequest("PUT", c.endpoint+"/issues/"+strconv.Itoa(*issue.Id)+".json?key="+c.apikey, strings.NewReader(string(s)))
 	if err != nil {
 		return err
 	}
